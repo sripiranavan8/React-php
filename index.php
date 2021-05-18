@@ -1,7 +1,10 @@
 <?php
 require __DIR__ . '/vendor/autoload.php';
 
+use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Factory;
+use React\Http\Message\Response;
+use React\Http\Server as HttpServer;
 use React\Promise\Deferred;
 use React\Socket\Connection;
 use React\Socket\LimitingServer;
@@ -85,18 +88,26 @@ use React\Stream\WritableResourceStream;
 //     });
 
 $loop = Factory::create();
-$out =  new WritableResourceStream(STDOUT, $loop);
-$server = new Server('0.0.0.0:8000', $loop);
-$limittingServer = new LimitingServer($server, null);
+// $out =  new WritableResourceStream(STDOUT, $loop);
+// $server = new Server('0.0.0.0:8000', $loop);
+// $limittingServer = new LimitingServer($server, null);
 
-$limittingServer->on('connection', function (Connection $connection) use ($out, $limittingServer) {
-    // echo "New Connection";
-    // $out->write("New Connection" . PHP_EOL);
-    $connection->on('data', function ($data) use ($out, $limittingServer) {
-        foreach ($limittingServer->getConnections() as $connection) {
-            $connection->write($data);
-        }
-        // $out->write($data);
-    });
+// $limittingServer->on('connection', function (Connection $connection) use ($out, $limittingServer) {
+//     // echo "New Connection";
+//     // $out->write("New Connection" . PHP_EOL);
+//     $connection->on('data', function ($data) use ($out, $limittingServer) {
+//         foreach ($limittingServer->getConnections() as $connection) {
+//             $connection->write($data);
+//         }
+//         // $out->write($data);
+//     });
+// });
+$counter = 0;
+$server = new HttpServer($loop, function (ServerRequestInterface $request) use (&$counter) {
+    return new Response(200, [
+        'Content-Type' => 'text/plain'
+    ], 'Hello you are the lucky visitor number:' . $counter++);
 });
+$socket = new Server(8080, $loop);
+$server->listen($socket);
 $loop->run();
